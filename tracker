@@ -1,0 +1,125 @@
+import numpy as np # linear algebra
+import pandas as pd 
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+import matplotlib.pyplot as plt
+#matplotlib.use('Qt5Agg')
+%matplotlib qt5
+#matplotlib.use('WebAgg')
+#matplotlib.use('TkAgg')
+import seaborn as sns
+from scipy.stats import mode
+data_path = "daily-website-visitors.csv"
+data = pd.read_csv(data_path)
+data.head()
+data.info()
+def remove_commas(x):
+    return float(x.replace(',', ''))
+data['Date'] = pd.to_datetime(data['Date'])
+data['Page.Loads'] = data['Page.Loads'].apply(lambda x : remove_commas(x))
+data['Unique.Visits'] = data['Unique.Visits'].apply(lambda x : remove_commas(x))
+data['First.Time.Visits'] = data['First.Time.Visits'].apply(lambda x : remove_commas(x))
+data['Returning.Visits'] = data['Returning.Visits'].apply(lambda x : remove_commas(x))
+data.head()
+cols_to_plot = ['Page.Loads', 'Unique.Visits', 'First.Time.Visits', 'Returning.Visits']
+plt.figure(figsize=(15, 15))
+for i, col in enumerate(cols_to_plot):
+    plt.subplot(2, 2, i+1)
+    sns.histplot(data=data, x=col)
+def check_normality(data, col):
+    # Compute mean
+    mean = int(np.mean(data[col]))
+    median = int(np.median(data[col]))
+    mode_ = int(mode(data[col])[0][0])
+    
+    print("mean", ":", mean, "median", ":", median, "mode", ":", mode_)
+    if mean == median == mode_:
+        print("{} Distribution is Normal".format(col))
+    elif mean > median and mean > mode_ and mode_ < median:
+        print("{} Distribution is skewed towards right".format(col))
+    else:
+        print("{} Distribution is skewed towards left".format(col))
+for col in cols_to_plot:
+    check_normality(data, col)
+figure, ax = plt.subplots(2, 2, figsize=(17, 15))
+plt.style.use('seaborn')
+
+ax1 = ax[0]
+ax2 = ax[1]
+# Plot the Number of Unique Visits with time
+ax1[1].plot(data['Date'], data['Unique.Visits'])
+ax1[1].set_xlabel("Date")
+ax1[1].set_ylabel("Number of Unique Visits")
+
+# Plot the Number of First Time visits with time
+ax2[0].plot(data['Date'], data['First.Time.Visits'])
+ax2[0].set_xlabel("Date")
+ax2[0].set_ylabel("Number of First Time visits")
+
+# Plot the Number of Returning visits with time
+ax2[1].plot(data['Date'], data['Returning.Visits'])
+ax2[1].set_xlabel("Date")
+ax2[1].set_ylabel("Number of Returning visits")
+#figure.tight_layout()
+figure.show()
+day_grouped_data = data.groupby('Day')
+def day_wise_EDA(day):
+    sun_data = day_grouped_data.get_group(day)
+    figure, ax = plt.subplots(2, 2, figsize=(17, 15))
+    plt.style.use('seaborn')
+
+    ax1 = ax[0]
+    ax2 = ax[1]
+
+    # Plot the Number of Page Loads with time
+    print("=================================================================={} ANALYSIS======================================================".format(day.upper()))
+    ax1[0].plot(sun_data['Date'], sun_data['Page.Loads'])
+    ax1[0].set_xlabel("Date")
+    ax1[0].set_ylabel("Number of Page Loads")
+
+    # Plot the Number of Unique Visits with time
+    ax1[1].plot(sun_data['Date'], sun_data['Unique.Visits'])
+    ax1[1].set_xlabel("Date")
+    ax1[1].set_ylabel("Number of Unique Visits")
+
+    # Plot the Number of First Time visits with time
+    ax2[0].plot(sun_data['Date'], sun_data['First.Time.Visits'])
+    ax2[0].set_xlabel("Date")
+    ax2[0].set_ylabel("Number of First Time visits")
+
+    # Plot the Number of Returning visits with time
+    ax2[1].plot(sun_data['Date'], sun_data['Returning.Visits'])
+    ax2[1].set_xlabel("Date")
+    ax2[1].set_ylabel("Number of Returning visits")
+
+    figure.show()
+day_wise_EDA('Sunday')
+# 2. Monday
+day_wise_EDA('Monday')
+# 3. Tuesday
+day_wise_EDA('Tuesday')
+day_wise_EDA('Wednesday')
+# 5. Thursday
+day_wise_EDA('Thursday')
+# 6. Friday
+day_wise_EDA('Friday')
+day_wise_EDA('Saturday')
+avg_day_data = day_grouped_data.mean().reset_index().drop('Row', axis=1)
+print(avg_day_data)
+cols_to_plot = ['Page.Loads', 'Unique.Visits', 'First.Time.Visits', 'Returning.Visits']
+plt.figure(figsize=(15, 15))
+for i, col in enumerate(cols_to_plot):
+    plt.subplot(2, 2, i+1)
+    sns.barplot(data=avg_day_data.sort_values(by=col, ascending=False), x='Day', y=col)
+cols_to_plot = ['Page.Loads', 'Unique.Visits', 'First.Time.Visits', 'Returning.Visits']
+plt.figure(figsize=(15, 15))
+for i, col in enumerate(cols_to_plot):
+    plt.subplot(2, 2, i+1)
+    sns.boxplot(data=data, x='Day', y=col)
+#Plot the correlation heatmap
+corr_matrix = data.corr()
+plt.figure(figsize=(12,12))
+sns.heatmap(corr_matrix, annot=True, cbar=False)
+plt.show()
